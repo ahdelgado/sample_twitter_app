@@ -21,11 +21,14 @@ class UsersSignupTest < ActionDispatch::IntegrationTest
   
     test "valid signup information with account activation" do
       get signup_path
+      name  = "Alcides"
+      email = "aj.ruiz@sv.cmu.edu"
+      password = "foobar"
       assert_difference 'User.count', 1 do
-        post users_path, user:{ name: "AJ", 
-                                email: "ahr@alumni.cmu.edu", 
-                                password: "foobar",
-                                password_confirmation: "foobar" }
+        post users_path, user:{ name: name, 
+                                email: email, 
+                                password: password,
+                                password_confirmation: password }
       end
       assert_equal 1, ActionMailer::Base.deliveries.size
       user = assigns(:user)
@@ -33,6 +36,17 @@ class UsersSignupTest < ActionDispatch::IntegrationTest
       # Try to log in before activation.
       log_in_as user
       assert_not is_logged_in?
+      # Index page
+      # Log in as valid user.
+      log_in_as(users(:aj))
+      # Unactivated user is not on the second page
+      get users_path, page: 2
+      assert_no_match user.name, response.body
+      # Profile page
+      get user_path(user)
+      assert_redirected_to root_url
+      # Log out valid user.
+      delete logout_path
       # Invalid activation token
       get edit_account_activation_url('inavlid token', email: user.email)
       assert_not is_logged_in?
